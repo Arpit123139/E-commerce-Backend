@@ -1,7 +1,13 @@
 const express=require('express')
 const fileupload=require('express-fileupload')
+const cloudinary=require('cloudinary').v2        // the api is always like cloudinary.v2.----- so we can directly use here 
 const app=express();
 
+cloudinary.config({
+    cloud_name:"dsojdaybz",
+    api_key:"652284453546932",
+    api_secret:"GlC9HSJ-qW_5tuh8xSzU0dkjilo"
+})
 
 app.set('view engine','ejs')
 app.use(fileupload({
@@ -15,11 +21,25 @@ app.get('/myget',(req,res)=>{
     console.log(req.body)                    // express always handle form such that all of our form comes into the body itself
     res.send(req.query)                      //There is a whole lot of issue in this when we are using the postman,react angular the form data is always present in the body even if we send it as a url in the form of query but when we are using ejs it is comming in req.query
 })
-app.post('/mypost',(req,res)=>{
+app.post('/mypost',async (req,res)=>{
 
     console.log(req.body)                   // Now as here we are using th epost form so the data always comes in body irrespective of the fact that it is url-encoded 
     console.log(req.files)
-    res.send(req.body)                      
+
+    let file=req.files.samplefile
+
+    result=await cloudinary.uploader.upload(file.tempFilePath,{
+        folder:'users'
+    })
+
+    console.log(result);
+
+    const details={
+        firstname:req.body.firstname,
+        lastname:req.body.lastname,
+        result
+    }
+    res.send(details)                      
 })
 
 app.get('/mygetform',(req,res)=>{
