@@ -3,6 +3,7 @@ const BigPromise=require('../middlewares/bigPromise')
 const CustomError=require('../utils/customError')
 const jwt=require('jsonwebtoken')
 
+//this middleware is to check whether the user is sign in or not and to inject information as req.user ..........
 
 exports.isLoggedIn=BigPromise(async (req,res,next)=>{
 
@@ -16,8 +17,9 @@ exports.isLoggedIn=BigPromise(async (req,res,next)=>{
         const decode=jwt.verify(token,process.env.JWT_SECRET)
         console.log(decode)             // here we get all the payload information in the form of json
 
-        req.user=User.findById(decode.ID)               // INJECTING MY PROPERT AS REQ.COOKIE AND MANY OTHER`
-        
+        req.user=await User.findById(decode.id)               // INJECTING MY PROPERTY AS REQ.COOKIE AND MANY OTHER`
+
+        console.log("req.user "+req.user)
         //bring in info from db
 
 
