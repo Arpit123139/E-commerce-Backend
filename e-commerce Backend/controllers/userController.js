@@ -4,6 +4,8 @@ const CustomError=require('../utils/customError')
 const cookieToken = require('../utils/cookieToken')
 const fileupload=require('express-fileupload')
 const cloudinary=require('cloudinary')
+const mailHelper = require('../utils/emailService')
+const crypto=require('crypto')
 
 exports.signup=BigPromise(async(req,res,next)=>{
 
@@ -88,4 +90,78 @@ exports.logout=BigPromise(async(req,res,next)=>{
         success:true,
         message:"Logout Successfully"
     })
+})
+
+exports.forgetPassword=BigPromise(async(req,res,next)=>{
+    const {email}=req.body;
+
+    const user =await User.findOne({email})
+
+    if(!user){
+        return next(new CustomError('User is not registered in the database',400))
+    }
+
+    const forgotToken=user.getForgotPasswordToken()
+    res.send(forgotToken)
+    //saving the token in the databse and mentioning validate as false so it does not create any error further by saving 
+    user.save({validateBeforeSave:false})
+
+    //crafting url http://localhost:4000/api/v1/password/reset/:token
+
+    const myurl=`${req.protocol}://${req.get("host")}/password/reset/${forgotToken}`;
+
+    const message=`copy paste this link in your URL and hit enter \n\n ${myurl}`
+
+    try {
+        await mailHelper({
+            email:user.email,
+            subject:"Password Resert Email ",
+            message:message
+        })
+
+        res.status(200).json({
+            success:true,
+            message:"Email send successfully"
+        })
+    } catch (error) {
+        // when the error occur in sending email we have to remove thid field from the user and save back again in the database
+        user.forgotPasswordToken=undefined
+        user.forgotPasswordExpiry=undefined
+        await user.save({validateBeforeSave:false})
+
+        return next(new CustomError(error.message,500))
+    }
+})
+
+exports.passwordReset=BigPromise(async(req,res,next)=>{
+    
+    const token=req.params.token
+
+    //In the databse it is stored as a hash so we have to encryp it as we have done in the User Model using crypto and then compare the token send in the url with that of the url stored in the databse 
+    console.log("token "+token)
+    const encryptToken=crypto.createHash("sha256").update(token).digest('hex') 
+    console.log("encrypt token "+encryptToken)
+    const user=await User.findOne({
+        encryptToken,
+        forgotPasswordExpiry:{$gt:Date.now()}                    // expiry is not over 
+    })
+
+    if(!user){
+        return next(new CustomError("Token is invalid or expired",400))
+    }
+
+    if(req.body.password!=req.body.confirmPassword){
+        return next(new CustomError("Password and ConfirmPassword are not same ",400))
+    }
+
+    user.password=req.body.password
+    await user.save()
+
+    // *************************************AS THE FUNCTION OF FORGOT PASSWORD TOKEN IS OVER SO WE MUST RESET THE FIELD
+    user.forgotPasswordToken=undefined
+    user.forgotPasswordExpiry=undefined
+
+    //SEND A JSON RESPONSE OR SEND A TOKEN
+    cookieToken(user,res)
+
 })

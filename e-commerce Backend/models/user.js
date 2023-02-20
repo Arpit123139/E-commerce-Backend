@@ -68,13 +68,15 @@ userSchema.methods.getJwtToken=function(){
 userSchema.methods.getForgotPasswordToken=function(){
     //genearate a long random String
     const forgotToken =crypto.randomBytes(20)
+   // console.log(forgotToken)
     // getting a hash - make sure to get a hash at the backend 
+    const temp=forgotToken;
     this.forgotPasswordToken=crypto.createHash("sha256").update(forgotToken).digest('hex')                //In the database it is stored in hash but we return to the user the String  then during the forget password process when the user send the token again then before comparing in with databse we have o use this function
-
+    console.log("model "+this.forgotPasswordToken)
     //time of token
-    this .forgotPasswordExpiry=Date.now()+20*60*1000            //20 min
+    this.forgotPasswordExpiry=Date.now()+20*60*1000            //20 min
 
-    return forgotToken
+    return temp
 
 }
 
