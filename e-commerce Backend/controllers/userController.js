@@ -175,3 +175,21 @@ exports.getLoggedInUserDetails=BigPromise(async(req,res,next)=>{
         user,
     })
 })
+
+exports.changePassword=BigPromise(async(req,res,next)=>{
+
+    const user=await User.findById(req.user.id).select("+password")              // req.user is the property crated in the middleware user.js
+
+    const isCorrectPassword=await user.isValidatedPassword(req.body.oldpassword)
+
+    if(!isCorrectPassword){
+        return next(new CustomError('old password is incorrect',500));
+    }
+
+    user.password=req.body.newpassword
+
+    await user.save()
+
+    //update the token as well because the information got changed
+    cookieToken(user,res);
+})
