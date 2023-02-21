@@ -26,8 +26,8 @@ exports.signup=BigPromise(async(req,res,next)=>{
 
     if(req.files){
         let file=req.files.photo
-        console.log("fbhbfhbb")
-        console.log(file)
+        // console.log("fbhbfhbb")
+        // console.log(file)
         result=await cloudinary.uploader.upload(file.tempFilePath,{
             folder:"user1"
         })
@@ -192,4 +192,132 @@ exports.changePassword=BigPromise(async(req,res,next)=>{
 
     //update the token as well because the information got changed
     cookieToken(user,res);
+})
+
+exports.updateUserDetails=BigPromise(async(req,res,next)=>{
+
+    const newData={
+        name:req.body.name,
+        email:req.body.email
+    }
+
+    if(req.files){
+
+        const user= await User.findById(req.user.id)
+
+        const imageId=user.photo.id
+
+        const resp=await cloudinary.v2.uploader.destroy(imageId)             // deleting the image from the cloudinary
+
+        //upload the new photo
+        const result=await cloudinary.uploader.upload(req.files.photo.tempFilePath,{
+            folder:"user1"
+        })
+
+        newData.photo={
+            id:result.public_id,
+            secure_url:result.secure_url
+        }
+
+
+    }
+    const user=await User.findByIdAndUpdate(req.user.id,newData,{
+        new:true,
+        runValidators:true,
+        useFindAndModify:false
+    })
+
+    res.status(200).json({
+        success:true,
+        user
+    })
+
+    //update the token as well because the information got changed
+    
+})
+
+//admin route
+
+exports.adminAllUser=BigPromise(async (req,res,next)=>{
+
+    const user=await User.find()
+
+    res.status(200).json({
+        success:true,
+        user
+    })
+})
+
+// the manager will get the data of the user except admin and manager
+exports.managerAllUser=BigPromise(async (req,res,next)=>{
+
+    const user=await User.find({role:'user'})
+
+    res.status(200).json({
+        success:true,
+        user
+    })
+})
+
+//admin  can retrieve the single User
+exports.adminSingleUser=BigPromise(async (req,res,next)=>{
+
+    const id=req.params.id
+    const user=await User.findById(id)
+
+    if(!user){
+        return next(new CustomError("User Does not exsist",201))
+    }
+
+    res.status(200).json({
+        success:true,
+        user
+    })
+})
+
+//admin can update a single user
+exports.adminUpdateSingleUserDetails=BigPromise(async (req,res,next)=>{
+
+    
+    const newData={
+        name:req.body.name,
+        email:req.body.email,
+        role:req.body.role
+    }
+
+    
+    const user=await User.findByIdAndUpdate(req.params.id,newData,{
+        new:true,
+        runValidators:true,
+        useFindAndModify:false
+    })
+
+    res.status(200).json({
+        success:true,
+        user
+    })
+    
+})
+
+exports.adminDeleteSingleUserDetails=BigPromise(async (req,res,next)=>{
+
+    const id=req.params.id;
+
+    const user=User.findById(id)
+    
+    if(!user){
+        return next(new CustomError("No such User found",401));
+    }
+
+    
+    if(user.photo)
+        await cloudinary.uploader.destroy(user.photo.id)
+
+    await user.remove()
+
+    res.status(200).json({
+        success:true,
+       
+    })
+    
 })

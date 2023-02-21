@@ -29,3 +29,11 @@ exports.isLoggedIn=BigPromise(async (req,res,next)=>{
 
     return next();
 })
+
+// to xheck whether the useer has the role of admin or not
+exports.customRole=(role)=>BigPromise(async(req,res,next)=>{
+    if(req.user.role!==role){
+        return next(new CustomError("yOU ARE NOT ALLOWED FOR THE FOLLOWING RESOURCES",400))
+    }
+    next();
+})
