@@ -51,7 +51,7 @@ const productSchema=mongoose.Schema({
         type:String,
         required:[true,'Pleases provide the brand Name '],
     },
-    rating:{
+    Averagerating:{
         type:Number,
         default:0,
     },

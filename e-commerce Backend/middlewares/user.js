@@ -17,9 +17,11 @@ exports.isLoggedIn=BigPromise(async (req,res,next)=>{
         const decode=jwt.verify(token,process.env.JWT_SECRET)
         console.log(decode)             // here we get all the payload information in the form of json
 
-        req.user=await User.findById(decode.id)               // INJECTING MY PROPERTY AS REQ.COOKIE AND MANY OTHER`
-
-        console.log("req.user "+req.user)
+        req.user=await User.findById(decode.id)          // INJECTING MY PROPERTY AS REQ.COOKIE AND MANY OTHER`
+        //const user1=await User.find({role:'user'}).find({name:"Arpit Kumar Gajya"}).clone()
+        //console.log("USER 1************************")
+       // console.log(user1)
+        console.log(req.user)
         //bring in info from db
 
 
@@ -32,7 +34,9 @@ exports.isLoggedIn=BigPromise(async (req,res,next)=>{
 
 // to xheck whether the useer has the role of admin or not
 exports.customRole=(role)=>BigPromise(async(req,res,next)=>{
+    
     if(req.user.role!==role){
+        
         return next(new CustomError("yOU ARE NOT ALLOWED FOR THE FOLLOWING RESOURCES",400))
     }
     next();
